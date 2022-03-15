@@ -1,0 +1,124 @@
+# Algebraic Coding Theory - Mary Wootters
+
+## Lecture 1
+
+### Video 1 - Motivation, the basic problem
+
+Setup: 
+- We have a message $x$ of length $k$.
+- We have an encoding scheme which takes $x$ and produces codeword $c$ of length $n > k$. 
+- This codeword is corrupted to $\tilde{c}$ through a noisy channel.
+- We have a decoding scheme which take $\tilde{c}$ and produces $x$.
+
+Basic problem of coding theory: 
+- Determine an encoding and decoding scheme which is good, by some metric.
+
+Examples:
+- Alice wishes to communicate $x \in \{0, 1\}^k$ to Bob, but a noisy channel converts $x$ into $\tilde{x} \in \{0, 1\}^k$
+- We wish to store on a server $x \in \{0, 1\}^k$, but environmental damage converts $x$ into $\tilde{x} \in \{0, 1\}^k$
+- More across computer science and mathematics
+
+Metrics of "Good":
+- Handle bad actions on our data
+- Recovering information regarding $x$
+- Minimizing overhead: $\frac{k}{n}$
+- Doing so efficiently
+
+Difficulty:
+- Trade-offs between various concerns
+- Defining concerns in concrete ways
+
+### Video 2 - Definitions and examples
+
+Code Definition
+- a **code** $C$ of **block length** $n$ over an **alphabet** $\Sigma$ is $C \subseteq \Sigma^n$. The elements $c \in C$ are **codewords**.
+- Example: $C = \{HELLOWORLD, BRUNCHTIME, CHADPALMER\}$ is a code of block length 10 over $\Sigma = \{A, B, ..., Z\}$
+- Example: $C = \{(0,0,0,0), (1,0,1,0)\}$ is a code of block length 4 over $\Sigma = \{0, 1\}$ (a binary code!)
+
+Relationship to Alice and Bob: Example 1
+- Consider **encoding map** from $\{0, 1\}^3 \rightarrow \{0, 1\}^4$:
+$$ENC(x_1, x_2, x_3) = ENC(x_1, x_2, x_3, x_1 + x_2 + x_3 \mod 2)$$
+- Note that the *code* is the image of the encoding map
+- This code can **correct** one **erasure** (we know which bit was erased): given an erased bit, we can determine what it should have been (what adds to $0 \mod 2$?)
+- This code can **detect** one **error** (we don't know what bit was changed), cannot however fix that error
+
+Correcting an error: Example 2
+- Consider $ENC(x_1, x_2, x_3, x_4) = (x_1, x_2, x_3, x_4, x_2 + x_3 + x_4 \mod 2, x_1 + x_3 + x_4 \mod 2, x_1 + x_2 + x_4 \mod 2)$ (this is the Hamming code!)
+- This code can correct an error: checking all three parity bits locates exact bit where error occurred
+
+More definitions
+- The **Hamming distance** between $x, y \in \Sigma^n$ is a metric defined as
+$$ \Delta(x, y) = \sum_{i=1}^n 1\{x_i \neq y_i\} $$
+- The **relative hamming distance** between $x, y \in \Sigma^n$ is
+$$ \delta(x, y) = \frac{\Delta(x, y)}{n} $$
+- The **minimum distance** of a code $C \subseteq \Sigma^n$ is
+$$ \min_{c \neq c' \in C} \Delta(c, c') $$
+
+Minimum Distance is a proxy for robustness
+- Theorem: A code with minimum distance $d$ can:
+    - Correct $\leq d-1$ erasures
+    - Detect $\leq d-1$ errors
+    - Correct $\leq \lfloor\frac{d-1}{2}\rfloor$ errors
+- Proof
+    - Consider arbitrary $c$, $c'$ closest codeword to $c$. We may consider Hamming balls of radius $d-1$ and $\lfloor\frac{d-1}{2}\rfloor$ around both $c$ and $c'$
+    - For (1) and (3), algorithm for $\tilde{c}$ is as follows: return $c \in C$ such that $\Delta(c, \tilde{c})$ is minimized.
+    - For (2): if $\tilde{c} \in C$, return "NO ERROR", else return "ERROR"
+    - Correctness of (3): $\tilde{c}$ must be in ball of radius $\lfloor\frac{d-1}{2}\rfloor$ around $c$, not in same ball around $\tilde{c}$. Thus $c$ is returned.
+    - Correctness of (2): $\tilde{c}$ must be in ball $d-1$ around $c$, then $\tilde{c} \not\in C$.
+    - Correctness of (1): Impossible for $d$ differences in $c, c'$ to be in $d - 1$ spots where erasures occurred. Then there can be only one codeword in $C$ with unerased values equal to that of $\tilde{c}$
+- Examples:
+    Example 2 had distance 2
+    Example 3 had distance 3
+
+Definitions
+- The **message length** or **dimension** of a code $C$ over an alphabet $\Sigma$ is defined to be $k = \log_{|\Sigma|}|C|$ (same as length from before)
+- The **rate** of a code $C \subseteq \Sigma^n$ is
+$$ R = \frac{\log_{|\Sigma|}|C|}{n} = \frac{\text{message length}}{\text{block length}} $$
+- $R \in [0, 1]$. $R$ close to 1 is desirable.
+- Code with distance $d$, message length $k$, and block length $n$ over an alphabet $\Sigma$ is called an $(n, k, d)_{|\Sigma|}$ code
+
+Returning to "concerns"
+- (1) and (2) can be concatenated into the concern that "We want minimum distance d" (AKA we want corrective power stated above)
+    - Note that these are worst case errors
+- (3) can be expressed as "We want rate as close to 1 as possible"
+- Thus, (setting aside issues of algorithmic efficiency), we wish to know the best trade-off between rate and distance.
+    - This is an open problem for binary codes.
+
+### Video 3 - The Hamming bound
+
+Question: What is the best trade-off between rate and distance?
+
+Motivation
+- Consider $|C|$ codewords in $\Sigma^n$ with disjoint Hamming balls of radius $\lfloor\frac{d-1}{2}\rfloor$
+- There must be a bound on the number of balls, or they will not fit in $\Sigma^n$
+
+Volume of Hamming Balls
+- A **Hamming ball** in $\Sigma^n$ of radius $e$ about $x \in \Sigma^n$ is
+$$ B_{\Sigma^n} (x, e) = \{ y \in \Sigma^n : \Delta(x, y) \leq e \} $$
+- The volume of $ B_{\Sigma^n} (x, e) $ is
+$$ \text{Vol}{|\Sigma|} (e, n) = |B_{\Sigma^n} (x, e)| $$
+- Note that balls are the same volume around any $x$ by symmetry, so $x$ is not on left side of equation
+
+Explicit formula
+$$ \text{Vol}_q(e, n) = \sum_{i = 0}^e \binom{n}{i} (q - 1)^i $$
+
+Quick definition of weight (helpful for proving volume formula):
+- wt $(x) = $ # of nonzero entries of $x$
+
+Returning to previous intuition to derive Hamming bound
+- Let $C \subseteq \Sigma^n$ be code with distance $d$ and message length $k$. Let $q = |\Sigma|$. Then $|C|\text{Vol}_q(\lfloor\frac{d-1}{2}\rfloor, n) \leq q^n $
+- This is interpreted as "total volume of disjoint Hamming balls" is less than or equal to "total volume of $\Sigma^n$
+- Taking log base $q$ of both sides, dividing through by $n$, and rearranging yields the Hamming bound:
+$$ R = \frac{\log_{q}|C|}{n} \leq 1 - \frac{\log_q(\text{Vol}_q(\lfloor\frac{d-1}{2}\rfloor, n))}{n} $$
+
+An example
+- Example three had $k = 4, n = 7, d = 3, q = 2$
+- Plugging into Hamming bound, we see $R = \frac{k}{n} \leq \frac{4}{7}$
+- Hamming code actually achieves this bound - thus, for binary alphabet, 3 bits is the smallest overhead you can add to words of length 4 to achieve distance 3
+
+## Lecture 2
+
+## Video 1 - Hamming code revisited
+
+
+

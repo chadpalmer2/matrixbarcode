@@ -3,9 +3,9 @@
 ## Timeline
 
 - By 3/16
-    - Learn entirely of mathematical grounding of Reed-Solomon encoding to presentation level
-    - Build Reed-Solomon encoder in JavaScript with simple front-end
-    - Design barcode
+    - Completely annotate, understand material in Wootters lectures up through RS codes
+    - Implement Reed-Solomon encoder in JavaScript with simple front-end, pushed to cloud service
+    - Design rough idea for barcode
 - By 4/6
     - Have very basic encoder/decoder implemented in JavaScript
 - By 4/20
@@ -14,7 +14,7 @@
         - Varied sizes for payloads of multiple sizes
     - Framework for mobile application
 - By 5/4
-    - Finalize, clean up code, write whitepaper
+    - Finalize, clean up code, write whitepaper and presentation materials
 
 ## Ideas
 
@@ -54,6 +54,8 @@
 [QR Code documentation - ISO standard](https://github.com/yansikeim/QR-Code/blob/master/ISO%20IEC%2018004%202015%20Standard.pdf)
 
 [QR Code Generator in multiple langauges](https://github.com/kazuhikoarase/qrcode-generator)
+
+[JS image processing](https://webkid.io/blog/image-processing-in-javascript/)
 
 ## Meeting notes
 
