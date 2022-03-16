@@ -2,7 +2,7 @@
 
 ## Lecture 1
 
-### Video 1 - Motivation, the basic problem
+### Video 1: Motivation, the basic problem
 
 Setup: 
 - We have a message $x$ of length $k$.
@@ -28,7 +28,7 @@ Difficulty:
 - Trade-offs between various concerns
 - Defining concerns in concrete ways
 
-### Video 2 - Definitions and examples
+### Video 2: Definitions and examples
 
 Code Definition
 - a **code** $C$ of **block length** $n$ over an **alphabet** $\Sigma$ is $C \subseteq \Sigma^n$. The elements $c \in C$ are **codewords**.
@@ -84,7 +84,7 @@ Returning to "concerns"
 - Thus, (setting aside issues of algorithmic efficiency), we wish to know the best trade-off between rate and distance.
     - This is an open problem for binary codes.
 
-### Video 3 - The Hamming bound
+### Video 3: The Hamming bound
 
 Question: What is the best trade-off between rate and distance?
 
@@ -118,7 +118,7 @@ An example
 
 ## Lecture 2
 
-## Video 1 - Hamming code revisited
+### Video 1: Hamming code revisited
 
 Recall the Hamming code of length 7.
 - We will consider a number of different, more generalizable interpretations.
@@ -173,7 +173,54 @@ Linear algebra:
         - $\dim(\ker(H)) = 7 - \text{rank}(H) = 7 - 3 = 4$
         - $\dim(C) = 4$
         - Thus, $C = \ker(H)$
-    
+    - $C$ has distance 3 - Proof
+        - If suffices to show that the minimum weight of $C$ is 3
+        - Suppose $c \in C$ has weight 1 or 2
+        - Recall $Hc = \overline{0}$. This would imply, however, that there is a nontrivial combination of $\leq 2$ columns of $H$ that sums to $\overline{0}$
+        - However, any pair of columns of $H$ are linearly independent
+        By contradiction, $\text{wt}(c) \geq 3, \forall c \in C$. Then $\text{Distance}(C) \geq 3$
+        - Consider that $(0, 1, 0, 1, 0, 1) \in C$ has weight 3, so $\text{Distance}(C) \leq 3$.
+        - Thus, $C$ has distance 3
+
+- Efficient decoding algorithm
+    - Compute $H\tilde{c}$. This will be a column of $H$, corresponding to the flipped bit.
+    - Proof: Let $z$ be error vector of weight 1, so $\tilde{c} = c + z$. Then $H\tilde{c} = H(c + z) = Hc + Hz = Hz$. $z$ has weight 1, so $Hz$ must equal a column of $H$ corresponding to the entry at which $z_i = 1$. This is the flipped bit in $\tilde{c}$.
+
+- Caution: all of this assumes linear algebra works well $\mod 2$. This is a generous assumption to make that we have yet to show is true.
+
+### Video 2: A cautionary tale
+
+- Attempting to do the Hamming code over $\mod 4$ fell apart quickly
+
+### Video 3: Finite fields
+
+A **field** $\mathbb{F}$ is a set of elements, along with operations + and *, such that associativity, commmutativity, and distributivity hold, and identities and inverses exist 
+- Integers $\mod 5$ are a finite field
+- Integers $\mod 4$ are not
+    - This is why the example in Video 2 fell apart
+- A **finite field** is a field over a finite set
+
+Theorem:
+
+- For every prime power $p^t$, there is a unique finite field with $p^t$ elements called $\mathbb{F}_{p^t}$ or $GF(p^t)$
+- No other finite fields exist
+- Note $\mathbb{F}_p = \{0, 1, ..., p - 1\} \mod p$
+- See abstract algebra for proof
+
+Linear algebra generally works over finite fields
+- Let $\mathbb{F}$ be a finite field
+- $\mathbb{F}^n = \{(x_1, ..., x_n): x_i \in \mathbb{F} \}$
+- A **subspace** $V$ \subseteq \mathbb{F}^n$ is a set that is closed under addition and scalar multiplication
+- $v_1, ..., v_t \in \mathbb{F}^n$ are **linearly independent** if $\forall \lambda_1, ..., \lambda_n \in \mathbb{F}$ not all 0, $\sum_i \lambda_iv_i \neq 0$
+- the span of $V' = v_1, ..., v_t \in V$ is equal to the set of a linear combinations of vectors in $V'$
+- a **basis** for a subspace $V \subseteq \mathbb{F}^n$ is  a set $V' = v_1, ..., v_t \in V$ such that $V'$ are linearly independent and $\text{span}(V') = V$
+- **dimension** of subspace $V$ is the number of elements in any basis of $V$
+
+Considerations
+- Most geometric intuitions like angles don't hold in finite field linear algebra
+- Error-correcting codes are done using finite fields, as linear algebra is defined primarily over finite fields (see modules for exceptions)
+
+### Video 4: Linear codes
 
 
 
