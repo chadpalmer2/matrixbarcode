@@ -120,5 +120,60 @@ An example
 
 ## Video 1 - Hamming code revisited
 
+Recall the Hamming code of length 7.
+- We will consider a number of different, more generalizable interpretations.
+
+Linear algebra:
+    - $G$ is a **generator matrix**
+    $$ G = \begin{pmatrix}
+    1&0&0&0\\
+    0&1&0&0\\
+    0&0&1&0\\
+    0&0&0&1\\
+    0&1&1&1\\
+    1&0&1&1\\
+    1&1&0&1\\
+    \end{pmatrix} $$
+    $$ ENC(\overline{x}) = G\overline{x} \mod 2 $$
+
+- Observations
+    - $C$ is closed under addition
+        - For any $c, c' \in C$, $c + c' = Gx + Gx' = G(x + x') \in C$
+    - $C$ is a **linear subspace** of $\{0, 1\}^7$ of dimension 4
+        - $C = \text{column-span}(G)$
+    - The distance of $C$ is the same as the **minimum weight** of any nonzero $c \in C$
+        - $\Delta(c, c') = \Delta(Gx, Gx') = \Delta(Gx - Gx', 0) = \text{wt}(G(x - x'))$
+        - Thus, for any distance between code words, there is another code word with that distance as its weight
+
+- Another interpretation: $H$ is a parity check matrix
+    $$ H = \begin{pmatrix}
+    0&1&1&1&1&0&0\\
+    1&0&1&1&0&1&0\\
+    1&1&0&1&0&0&1\\
+    \end{pmatrix} $$
+    $$ H \begin{pmatrix}
+    x_1\\
+    x_2\\
+    x_3\\
+    x_4\\
+    c_5\\
+    c_6\\
+    c_7\\
+    \end{pmatrix} = 
+    \begin{pmatrix}
+    0\\
+    0\\
+    0\\
+    \end{pmatrix}
+    $$
+    - $\forall c \in C, Hc = 0$
+
+- Observations
+    - $C \subseteq \ker(H)$
+        - $\dim(\ker(H)) = 7 - \text{rank}(H) = 7 - 3 = 4$
+        - $\dim(C) = 4$
+        - Thus, $C = \ker(H)$
+    
+
 
 
