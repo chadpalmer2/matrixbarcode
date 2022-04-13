@@ -2,19 +2,14 @@
 
 ## Timeline
 
-- By 3/16
-    - Completely annotate, understand material in Wootters lectures up through RS codes
-    - Implement Reed-Solomon encoder in JavaScript with simple front-end, pushed to cloud service
-    - Design rough idea for barcode
-- By 4/6
-    - Have very basic encoder/decoder implemented in JavaScript
-- By 4/20
-    - Improve decoder:
-        - Transformations for "real-world" skewed and damaged images
-        - Varied sizes for payloads of multiple sizes
-    - Framework for mobile application
+- By 4/13
+    - Have math presentation materials complete
+    - Have super barebones encoder and decoder complete: think minimum viable product
+- By 4/27
+    - Have presentation done
+    - Clean up website and add quality of life features, improve functionality
 - By 5/4
-    - Finalize, clean up code, write whitepaper and presentation materials
+    - Finalize everything, produce whitepaper write-up
 
 ## Ideas
 
@@ -36,6 +31,16 @@
         - Data is decoded utilizing Reed-Solomon encoding
         - Payload displayed
 
+### Sufficient data storage with simple snowflake design
+Sufficient: 75 ASCII characters, 75 bytes, 600 bits
+
+$600 * 1.5 = 900$ bits
+
+Consider: 12 sets of 24 lines of 8 length gradations
+Consider: 
+
+Calculation: $\log_2(8^{12 * 24}) = 864$, 864 bits of data storage
+
 ### Mathematical presentation
 
 - Build up Reed-Solomon encryption from the theoretical ground up
@@ -56,6 +61,8 @@
 [QR Code Generator in multiple langauges](https://github.com/kazuhikoarase/qrcode-generator)
 
 [JS image processing](https://webkid.io/blog/image-processing-in-javascript/)
+
+[RS encoder/decoder in Python3](https://github.com/tomerfiliba/reedsolomon)
 
 ## Meeting notes
 

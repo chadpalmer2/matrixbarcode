@@ -1,4 +1,4 @@
-# Algebraic Coding Theory - Mary Wootters
+# Algebraic Coding Theory
 
 ## Lecture 1
 
@@ -96,7 +96,7 @@ Volume of Hamming Balls
 - A **Hamming ball** in $\Sigma^n$ of radius $e$ about $x \in \Sigma^n$ is
 $$ B_{\Sigma^n} (x, e) = \{ y \in \Sigma^n : \Delta(x, y) \leq e \} $$
 - The volume of $ B_{\Sigma^n} (x, e) $ is
-$$ \text{Vol}{|\Sigma|} (e, n) = |B_{\Sigma^n} (x, e)| $$
+$$ \text{Vol}_{|\Sigma|} (e, n) = |B_{\Sigma^n} (x, e)| $$
 - Note that balls are the same volume around any $x$ by symmetry, so $x$ is not on left side of equation
 
 Explicit formula
@@ -177,7 +177,7 @@ Linear algebra:
         - If suffices to show that the minimum weight of $C$ is 3
         - Suppose $c \in C$ has weight 1 or 2
         - Recall $Hc = \overline{0}$. This would imply, however, that there is a nontrivial combination of $\leq 2$ columns of $H$ that sums to $\overline{0}$
-        - However, any pair of columns of $H$ are linearly independent
+        - However, any pair of columns of $H$ are linearly independent.
         By contradiction, $\text{wt}(c) \geq 3, \forall c \in C$. Then $\text{Distance}(C) \geq 3$
         - Consider that $(0, 1, 0, 1, 0, 1) \in C$ has weight 3, so $\text{Distance}(C) \leq 3$.
         - Thus, $C$ has distance 3
@@ -221,6 +221,105 @@ Considerations
 - Error-correcting codes are done using finite fields, as linear algebra is defined primarily over finite fields (see modules for exceptions)
 
 ### Video 4: Linear codes
+
+A **linear code** $C$ of dimension $k$ and block length $n$ over a finite field $\mathbb{F}$ is a $k$-dimensional subspace of $\mathbb{F}^n$.
+- Note that if $C$ is a code of block length $n$, message length $k$ over the alphabet $\Sigma = \mathbb{F}$, then $C$ is a linear code iff $C$ is a subspace
+- $|C| = |\mathbb{F}|^k \implies k = \log_{|\mathbb{F}|}|C|$
+
+Let $C \subseteq \mathbb{F}^n$ be a linear code of dimension $k$. A matrix $G \in \mathbb{F}^{n \times k}$ is a **generator matrix** for $C$ if $C = \text{Column-span}(G) = \{Gx : x \in \mathbb{F}^k\}$
+- Any linear code has a generator matrix (any basis for $C$)
+- There may be many generator matricies for the same code
+    - Gaussian elimination results in matrix consisting of identiy matrix in top rows, corresponding to a **systematic encoding map** which preserves message $x$ as the first $k$ entries of code $Gx$
+
+The **dual code** of $C$ is $C^{\bot} = \{v \in \mathbb{F}^n : \langle v, c \rangle = 0, \forall c \in C\}$.
+
+A matrix $H \in \mathbb{F}^{(n - k) \times k}$ is a parity check matrix for $C$ if $C = \ker(H)$.
+- Any linear code has a parity check matrix (take basis for $C^{\bot}$)
+- There may be many parity check matrices
+
+Useful facts
+- $HG = 0$
+- $C^{\bot}$ is a linear code with dimension $n - k$, generator matrix $H^T$, and parity check matrix $G^T$
+- The distance of $C$ is the minimum weight of any nonzero $c \in C$
+- The distance of $C$ is the smallest number $d$ so that $H$ has $d$ linearly dependent columns
+
+## Lecture 3
+
+### Video 1: GV Bound
+
+Theorem (Gilbert-Vershamov): for any prime power $q$, and for any $d \leq n$, there exists a linear code $C$ with length $n$ alphabet size $q$, distance $d$ such that rate $R \geq 1 - \frac{\log_q(\text{Vol}_q(d-1, n)) - 1}{n}$
+- Also true if you remove "prime power" and "linear", though we will not prove this
+- Similar to Hamming bound
+    - Bound bounds quality of codes
+    - Theorem guarantees quality of codes
+
+Proof idea
+- Choose a random linear code $C$ of the appropriate rate
+- Show $\mathbb{P}(C \text{ has distance} \geq d) > 0$
+- Then such a code must exist
+
+Proof
+- Let $k = n - \log_q(\text{Vol}_q(d-1, n)) - 1$
+    - This exactly meets the bound
+- Let $C$ be a random subspace of $\mathbb{F}_q^n$ of dim k
+    - Note there are finitely many such subspaces, so this is well-defined
+- Let $G \in \mathbb{F}_q^{n \times k}$ be a random generator matrix for $C$
+    - Again, random basis for subspace $C$
+- Useful fact: $\forall x \neq 0, Gx \text{ is uniformly distributed in } \mathbb{F}_q^n - \{0\}$
+- $\text{dist}(C) = \min_{c \in C - \{0\}} \text{wt}(c) = \min_{x \in \mathbb{F}_q^k - \{0\}} \text{wt}(Gx)$
+- For any fixed $x \neq 0$,
+$$ \mathbb{P}\{\text{wt}(Gx) < d\} = \mathbb{P}\{Gx \in B_q(0, d-1)\} = \frac{\text{Vol}_q(d-1, n) - 1}{q^n - 1} \leq \frac{\text{Vol}_q(d-1, n)}{q^n} $$
+
+- By the union bound,
+$$ \mathbb{P}\{\exists x \in \mathbb{F}_q^k - \{0\} \text{ such that } \text{wt}(Gx) < d\} \leq q^k \frac{\text{Vol}_q(d-1, n)}{q^n} $$
+
+- We wish to show that this probability is less than 1. Then probability of distance being less than $d$ is not certain, to probability of distance being $d$ or more is nonzero. Recall
+$$k = n - \log_q(\text{Vol}_q(d-1, n)) - 1$$
+$$k < n - \log_q(\text{Vol}_q(d-1, n))$$
+$$k - n + \log_q(\text{Vol}_q(d-1, n)) < 0$$
+$$q^{k - n + \log_q(\text{Vol}_q(d-1, n))} < 1$$
+$$q^k \frac{\text{Vol}_q(d-1, n)}{q^n} < 1$$
+
+- Thus, the bound holds and such a code exists.
+
+### Video 2: Efficient algorithms for linear codes
+
+We define **efficient** to mean time polynomial in $n$.
+
+Then suppose $C \subseteq \mathbb{F}_q^n$ is a linear code with distance $d$. Then
+- There is an efficient **encoding map** $ENC : \mathbb{F}_q^k \rightarrow \mathbb{F}_q^n$.
+    - This is just $X \rightarrow Gx$
+- There is an efficient algorithm to **detect** $\leq d - 1$ **errors**.
+    - This is just $H\tilde{c} = 0$?
+- There is an efficient algorithm to **correct** $\leq d-1$ erasures.
+    - With $\leq d - 1$ erasures, we may remove the corresponding rows of $G$ to construct $\tilde{G}$. Then $\tilde{G}x = \tilde{c}$. There can only be one $x$ solving this equation by previous proof.
+
+One is missing! Can we **correct** $\leq \lfloor \frac{d-1}{2} \rfloor$ errors?
+- No. Problem statement: Given $\tilde{c} \in \mathbb{F}_q^n, G \in \mathbb{F}_q^{n \times k}$, find $x \in \mathbb{F}_q^k$ minimizing $\Delta(\tilde{c}, Gx)$.
+- This problem (maximum likelihood decoding) is NP-hard.
+- Other NP-hard problems: still NP-hard if $G$ is known in advance with arbitrary preprocessing time. NP-hard to approximate. NP-hard to find distance of code given $G$.
+
+- Good news
+    - Choosing $C$ is a design choice, and for some (see Hamming codes) we can find polynomial-time algorithms
+    - Inefficient decoding is a feature for things like cryptography
+
+### Video 3: The McEliece Cryptosystem
+
+### Video 4: Asymptotics
+
+### Video 5: q-ary entropy
+
+## Lecture 4
+
+### Video 1: The Singleton bound
+
+### Video 2: The Plotkin bound
+
+### Video 3: Polynomials over finite fields
+
+### Video 4: Reed-Solomon codes
+
+### Video 5: The dual view of Reed-Solomon codes
 
 
 
