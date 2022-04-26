@@ -1,10 +1,10 @@
-# from curses.panel import top_panel
-# from turtle import left
 from PIL import Image, ImageDraw, ImageEnhance, ImageStat, ImageFilter, ImageChops
 import os
 import numpy
 from math import sqrt, sin, cos, atan2, pi
 from reedsolo import RSCodec, ReedSolomonError
+import cv2
+
 import pdb
 
 ## hardcoded encoding sizes
@@ -36,8 +36,114 @@ total_spoke_length = center_spoke_length + main_spoke_length + endpoint_spoke_le
 
 image_size = int(total_spoke_length * 2.5)
 
-## numpy helper function for perspective transform
-## https://stackoverflow.com/questions/14177744/how-does-perspective-transformation-work-in-pil
+## Helpful coordinate geometry functions
+
+def get_translated_point(xy, d, angle):
+    return (int(xy[0] + d * cos(angle)), int(xy[1] + d * sin(angle)))
+
+def get_distance(xy1, xy2):
+    x_side = xy2[0] - xy1[0]
+    y_side = xy2[1] - xy1[1]
+
+    return [
+        sqrt(x_side**2 + y_side**2), 
+        atan2(y_side, x_side)
+    ]
+
+## openCV function for finding hexagons - https://stackoverflow.com/questions/60177653/how-to-detect-an-octagonal-shape-in-python-and-opencv
+
+def find_hexagons(image):
+    # grayscale, threshold
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+
+    hex_centroids = []
+
+    # find contours and detect valid hexagons
+    contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for index, contour in enumerate(contours):
+        peri = cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, 0.04 * peri, True)
+
+        # check for hexagon
+        if len(approx) != 6:
+            continue
+
+        # find centroid
+        M = cv2.moments(contour)
+
+        # eliminate corner cases/division by zero
+        if M["m00"] == 0:
+            continue
+
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+
+        hex_centroids.append([(cX, cY), peri])
+
+    # exit if insufficient number of hexagons found
+    if len(hex_centroids) < 11:
+        return []
+
+    # get 11 largest hexagons
+    hex_centroids.sort(reverse=True, key=lambda x: x[1])
+    hex_centroids = hex_centroids[0:11]
+
+    # get black_hexes
+    middle = hex_centroids[0][0]
+    black_hexes = []
+
+    for h in hex_centroids[2:11]:
+        x, y = h[0]
+        if image[y][x][0] == 0:
+            black_hexes.append(h[0])
+
+    if len(black_hexes) != 6:
+        return []
+
+    black_hexes.sort()
+    a, b, c = black_hexes[0], black_hexes[2], black_hexes[4]
+
+    ## some silly math to figure out which black hex is which
+    dist_ab = get_distance(a, b)[0]
+    dist_bc = get_distance(b, c)[0]
+    dist_ac = get_distance(a, c)[0]
+    arr_min = min([dist_ab, dist_bc, dist_ac])
+    arr_max = max([dist_ab, dist_bc, dist_ac])
+    if arr_min == dist_ab:
+        bottom = c
+        if arr_max == dist_bc:
+            top = b
+            top_left = a
+        else:
+            top = a
+            top_left = b
+    elif arr_min == dist_bc:
+        bottom = a
+        if arr_max == dist_ab:
+            top = b
+            top_left = c
+        else:
+            top = c
+            top_left = b
+    else:
+        bottom = b
+        if arr_max == dist_bc:
+            top = c
+            top_left = a
+        else:
+            top = a
+            top_left = c
+
+    ## calculating approx location of bottom right hex and correcting from actual hexes
+    trans_dist = get_distance(top_left, middle)
+    bottom_right = get_translated_point(top_left, 2 * trans_dist[0], trans_dist[1])
+    bottom_right = min(hex_centroids, key=lambda x: get_distance(bottom_right, x[0])[0])[0]
+
+    # returning hex coordinates for perspective shift
+    return [ top, top_left, bottom, bottom_right ]
+
+## numpy helper function for perspective transform - https://stackoverflow.com/questions/14177744/how-does-perspective-transformation-work-in-pil
 
 def find_coeffs(pa, pb):
     matrix = []
@@ -100,18 +206,6 @@ def decode_line_lengths(lengths):
     return bytearray(payload)
 
 # image encoding functions
-
-def get_translated_point(xy, d, angle):
-    return (int(xy[0] + d * cos(angle)), int(xy[1] + d * sin(angle)))
-
-def get_distance(xy1, xy2):
-    x_side = xy2[0] - xy1[0]
-    y_side = xy2[1] - xy1[1]
-
-    return [
-        sqrt(x_side**2 + y_side**2), 
-        atan2(y_side, x_side)
-    ]
 
 def draw_hexagon(d, xy, spoke, color):
     d.polygon([
@@ -191,6 +285,8 @@ def decode_processed_image(img):
     middle = (image_size // 2, image_size // 2)
     spoke_points = [ get_translated_point(middle, total_spoke_length, angle) for angle in spoke_point_translation_angles ]
 
+    # d = ImageDraw.Draw(img)
+
     lengths = []
     for index in range(2 * spoke_count * lines_per_spoke):
         spoke = index // 48
@@ -203,32 +299,80 @@ def decode_processed_image(img):
         spoke_point = get_translated_point(middle, distance_from_origin, angle_from_origin)
         max_point = get_translated_point(middle, int(distance_from_origin * sqrt(3) / 2), angle_from_origin + (pi / 6)*(-1)**(clockwise_spin))
 
-        max_distance = get_distance(spoke_point, max_point)
+        max_distance, angle = get_distance(spoke_point, max_point)
 
         for length in range(1, 8):
-            end_point = get_translated_point(spoke_point, max_distance[0] * (length / 8), max_distance[1])
-            
-            x, y = end_point
-            avg = 0
-            for i in range(-4, 5):
-                for j in range(-4, 5):
-                    avg += img.getpixel((x + i, y + j))
-            avg /= 81
+            end_point = get_translated_point(spoke_point, max_distance * (length / 8), angle)
 
-            if avg >= 20 and avg <= 225:
+            samples = [ img.getpixel(get_translated_point(end_point, i, angle)) for i in range(-int(max_distance / 24), int(max_distance / 24)) ]
+            avg = sum(samples) / len(samples)
+
+            # for i in range(-int(max_distance / 24), int(max_distance / 24)):
+            #     pixel = get_translated_point(end_point, i, angle)
+            #     d.point([pixel], fill=255 - img.getpixel(pixel))
+
+            if avg >= 10 and avg <= 235:
                 lengths.append(length)
                 break
         else:
             lengths.append(0)
 
+    # img.show()
+
     # RS decoding
 
     payload = decode_line_lengths(lengths)
-    data = decode_payload(payload)[0].decode()
+
+    try:
+        data = decode_payload(payload)[0].decode()
+    except:
+        print("RS decryption failed: too many errors")
 
     print(data)
 
 def decode_image(filename):
+    try:
+        img = Image.open(filename)
+    except:
+        print("no such file.")
+        return
+
+    # Render image in black and white
+
+    out = Image.new('I', img.size, 0xffffff)
+    thresh = (0.5) * (sum(ImageStat.Stat(img).mean) / 3)
+    fn = lambda x : 255 if x > thresh else 0
+    out = img.convert('L').point(fn, mode='1')
+
+    # Get spoke points
+
+    opencvImage = cv2.cvtColor(numpy.array(out.convert('RGB')), cv2.COLOR_RGB2BGR)
+    real_spoke_points = find_hexagons(opencvImage)
+
+    if real_spoke_points == []:
+        print("Snowflake not detected.")
+        return
+
+    # perspective transform real spoke_points to ideal spoke_points
+
+    orientation_hex_angles = [
+        -pi / 2,     # top
+        -5 * pi / 6, # top left
+        -3 * pi / 2,  # bottom
+        -11 * pi / 6 # bottom right
+    ]
+
+    middle = (image_size // 2, image_size // 2)
+    orientation_hexes = [ get_translated_point(middle, total_spoke_length, angle) for angle in orientation_hex_angles ]
+    out = perspective_transform(out, real_spoke_points, orientation_hexes)
+
+    out.resize((image_size, image_size))
+
+    # decode processed image
+
+    decode_processed_image(out)
+
+def old_decode_image(filename):
     try:
         img = Image.open(filename)
     except:
@@ -242,59 +386,67 @@ def decode_image(filename):
     fn = lambda x : 255 if x > thresh else 0
     out = img.convert('L').point(fn, mode='1')
 
+    opencvImage = cv2.cvtColor(numpy.array(out.convert('RGB')), cv2.COLOR_RGB2BGR)
+    cv_real_spoke_points = find_hexagons(opencvImage)
+
     # get crop bounds
 
     pixels = out.load()
     
-    left = 0
-    white_pixel_count = 0
-    for x in range(out.size[0]):
-        for y in range(out.size[1]):
-            if pixels[x, y] == 255:
-                white_pixel_count += 1
-        if (white_pixel_count / out.size[1]) >= 0.95:
-            left = x
-            break
-        else:
-            white_pixel_count = 0
+    # left = 0
+    # white_pixel_count = 0
+    # for x in range(out.size[0]):
+    #     for y in range(out.size[1]):
+    #         if pixels[x, y] == 255:
+    #             white_pixel_count += 1
+    #     if (white_pixel_count / out.size[1]) >= 0.95:
+    #         left = x
+    #         break
+    #     else:
+    #         white_pixel_count = 0
     
-    right = out.size[0] - 1
-    white_pixel_count = 0
-    for x in range(out.size[0] - 1, -1, -1):
-        for y in range(out.size[1]):
-            if pixels[x, y] == 255:
-                white_pixel_count += 1
-        if (white_pixel_count / out.size[1]) >= 0.95:
-            right = x
-            break
-        else:
-            white_pixel_count = 0
+    # right = out.size[0] - 1
+    # white_pixel_count = 0
+    # for x in range(out.size[0] - 1, -1, -1):
+    #     for y in range(out.size[1]):
+    #         if pixels[x, y] == 255:
+    #             white_pixel_count += 1
+    #     if (white_pixel_count / out.size[1]) >= 0.95:
+    #         right = x
+    #         break
+    #     else:
+    #         white_pixel_count = 0
     
-    up = 0
-    white_pixel_count = 0
-    for y in range(out.size[1]):
-        for x in range(out.size[0]):
-            if pixels[x, y] == 255:
-                white_pixel_count += 1
-        if (white_pixel_count / out.size[0]) >= 0.95:
-            up = y
-            break
-        else:
-            white_pixel_count = 0
+    # up = 0
+    # white_pixel_count = 0
+    # for y in range(out.size[1]):
+    #     for x in range(out.size[0]):
+    #         if pixels[x, y] == 255:
+    #             white_pixel_count += 1
+    #     if (white_pixel_count / out.size[0]) >= 0.95:
+    #         up = y
+    #         break
+    #     else:
+    #         white_pixel_count = 0
     
-    down = out.size[1] - 1
-    white_pixel_count = 0
-    for y in range(out.size[1] - 1, -1, -1):
-        for x in range(out.size[0]):
-            if pixels[x, y] == 255:
-                white_pixel_count += 1
-        if (white_pixel_count / out.size[0]) >= 0.95:
-            down = y
-            break
-        else:
-            white_pixel_count = 0
+    # down = out.size[1] - 1
+    # white_pixel_count = 0
+    # for y in range(out.size[1] - 1, -1, -1):
+    #     for x in range(out.size[0]):
+    #         if pixels[x, y] == 255:
+    #             white_pixel_count += 1
+    #     if (white_pixel_count / out.size[0]) >= 0.95:
+    #         down = y
+    #         break
+    #     else:
+    #         white_pixel_count = 0
 
-    out = out.crop((left, up, right, down))
+    # out = out.crop((left, up, right, down))
+
+    # find real spoke_points (openCV)
+
+    opencvImage = cv2.cvtColor(numpy.array(out.convert('RGB')), cv2.COLOR_RGB2BGR)
+    cv_real_spoke_points = find_hexagons(opencvImage)
 
     # find real spoke_points
 
@@ -416,3 +568,8 @@ def main():
         decode_image(input())
 
 main()
+
+# To Do:
+## Website for nice user interface (potentially)
+## Variable encoding schemes for different payload lengths
+### Version information in center hex
